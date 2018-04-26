@@ -1,4 +1,4 @@
-OP = "&|>"
+OP = "&|>/^~"
 
 
 def var(wyr):
@@ -10,15 +10,18 @@ def check(wyr):
     state = True
     ln = 0
     for z in wyr:
+        # for now no check
+        if z in '~':
+            continue
         if state:
             if z.isalnum():
                 state = False
-            elif z in ")" + OP:
+            elif z in ')' + OP:
                 return False
         else:
             if z in OP:
                 state = True
-            elif z in "(" or z.isalnum():
+            elif z in '(' or z.isalnum():
                 return False
         if z == '(':
             ln += 1
@@ -49,7 +52,10 @@ def onp(wyr):
     p = bal(wyr, ">")
     if p >= 0:
         return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
-    p = bal(wyr, "&|")
+    p = bal(wyr, "&|/")
+    if p >= 0:
+        return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
+    p = bal(wyr, "^")
     if p >= 0:
         return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
     return wyr
@@ -73,19 +79,34 @@ def AND(a, b):
     return a and b
 
 
+def NAND(a, b):
+    return 1 - (a and b)
+
+
+def XOR(a, b):
+    return OR(AND(a, (1 - b)), AND((1 - a), b))
+
+
 def evaluate(wyr, val):
     zm = var(wyr)
     wyr = mapuj(wyr, zm, val)
     st = []
+    print(wyr)
     for z in wyr:
         if z in "01":
             st.append(int(z))
+        elif z in "~":
+            st.append(1 - st.pop())
         elif z in "|":
             st.append(OR(st.pop(), st.pop()))
         elif z in "&":
             st.append(AND(st.pop(), st.pop()))
         elif z in ">":
             st.append(st.pop() or (1 - st.pop()))
+        elif z in "/":
+            st.append(NAND(st.pop(), st.pop()))
+        elif z in "^":
+            st.append(XOR(st.pop(), st.pop()))
     return st.pop()
 
 
@@ -137,7 +158,7 @@ def expr(data):
                 continue
             if x[i] == '0':
                 result += '~'
-            result += "ABCDEFGHIJKLMNOPRSTUWYZ"[i] + '&'
+            result += "abcdefghijklmnoprstuwyz"[i] + '&'
         result2 += '(' + result[:-1] + ')|'
     return result2[:-1]
 
@@ -146,6 +167,7 @@ def main():
     f = open("dane.txt", "r")
     data = set(f.read().splitlines())
     for line in data:
+        line = line.replace("~~", "")
         if not check(line):
             print("ERROR")
             continue
