@@ -1,75 +1,10 @@
+import sys
+
 OP = "&|>/^~"
+alphabet = "abcdefghijklmnoprstuwyz"
 
 
-def var(wyr):
-    w = [z for z in wyr if z.isalnum()]
-    return "".join(sorted(set(w)))
-
-
-def check(wyr):
-    state = True
-    ln = 0
-    for z in wyr:
-        # for now no check
-        if z in '~':
-            continue
-        if state:
-            if z.isalnum():
-                state = False
-            elif z in ')' + OP:
-                return False
-        else:
-            if z in OP:
-                state = True
-            elif z in '(' or z.isalnum():
-                return False
-        if z == '(':
-            ln += 1
-        elif z == ')':
-            ln -= 1
-        if ln < 0:
-            state = False
-    if ln != 0:
-        return False
-    return not state
-
-
-def bal(wyr, op):
-    ln = 0
-    for i in range(len(wyr) - 1, 0, -1):
-        if wyr[i] == '(':
-            ln += 1
-        elif wyr[i] == ')':
-            ln -= 1
-        elif wyr[i] in op and ln == 0:
-            return i
-    return -1
-
-
-def onp(wyr):
-    while wyr[0] == '(' and wyr[-1] == ')' and check(wyr[1: -1]):
-        wyr = wyr[1: -1]
-    p = bal(wyr, ">")
-    if p >= 0:
-        return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
-    p = bal(wyr, "&|/")
-    if p >= 0:
-        return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
-    p = bal(wyr, "^")
-    if p >= 0:
-        return onp(wyr[:p]) + onp(wyr[p + 1:]) + wyr[p]
-    return wyr
-
-
-def mapuj(wyr, zm, wart):
-    l = list(wyr)
-    for i in range(len(l)):
-        p = zm.find(l[i])
-        if p >= 0:
-            l[i] = wart[p]
-
-    return "".join(l)
-
+# defined operations
 
 def OR(a, b):
     return a or b
@@ -87,12 +22,96 @@ def XOR(a, b):
     return OR(AND(a, (1 - b)), AND((1 - a), b))
 
 
-def evaluate(wyr, val):
-    zm = var(wyr)
-    wyr = mapuj(wyr, zm, val)
+def get_var(ex):
+    w = [z for z in ex if z.isalnum()]
+    return "".join(sorted(set(w)))
+
+
+# expression check
+
+def check(ex):
+    state = True
+    paren_count = 0
+    for z in ex:
+        if z == '~':
+            continue
+        if state:
+            if z.isalnum():
+                state = False
+            elif z in ')' + OP:
+                return False
+        else:
+            if z in OP:
+                state = True
+            elif z in '(' or z.isalnum():
+                return False
+        if z == '(':
+            paren_count += 1
+        elif z == ')':
+            paren_count -= 1
+        if paren_count < 0:
+            state = False
+    if paren_count != 0:
+        return False
+    return not state
+
+
+# find operation index
+
+def bal(ex, op):
+    paren_count = 0
+    for i in range(len(ex) - 1, -1, -1):
+        if ex[i] == '(':
+            paren_count += 1
+        elif ex[i] == ')':
+            paren_count -= 1
+        elif ex[i] in op and paren_count == 0:
+            return i
+    return -1
+
+
+# rpn with operators priorities
+
+def rpn(ex):
+    if ex == "":
+        return ex
+    while ex[0] == '(' and ex[-1] == ')' and check(ex[1: -1]):
+        ex = ex[1: -1]
+    p = bal(ex, ">")
+    if p >= 0:
+        return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    p = bal(ex, "&|/")
+    if p >= 0:
+        return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    p = bal(ex, "^")
+    if p >= 0:
+        return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    p = bal(ex, "~")
+    if p >= 0:
+        return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    return ex
+
+
+def map(ex, var, val):
+    l = list(ex)
+    for i in range(len(l)):
+        if l[i] in "F":
+            l[i] = "0"
+        elif l[i] in "T":
+            l[i] = "1"
+        else:
+            p = var.find(l[i])
+            if p >= 0:
+                l[i] = val[p]
+
+    return "".join(l)
+
+
+def evaluate(ex, val):
+    zm = get_var(ex)
+    ex = map(ex, zm, val)
     st = []
-    print(wyr)
-    for z in wyr:
+    for z in ex:
         if z in "01":
             st.append(int(z))
         elif z in "~":
@@ -109,6 +128,8 @@ def evaluate(wyr, val):
             st.append(XOR(st.pop(), st.pop()))
     return st.pop()
 
+
+# generate binary strings
 
 def gen(n):
     for i in range(2 ** n):
@@ -131,6 +152,8 @@ def latch(s1, s2):
         return False
 
 
+# Quine McCluskey algorithm for logic reduction
+
 def reduce(data):
     result = set()
     f2 = False
@@ -149,36 +172,77 @@ def reduce(data):
     return result
 
 
-def expr(data):
-    result2 = ""
+def check_true(data):
     for x in data:
+        if x != '-':
+            return True
+    return False
+
+
+# returns an expression from the reduced form
+# also erases unnecessary parentheses
+
+def ex_from_reduced(data):
+    if len(data) == 0:
+        return "F"
+
+    # fully reduced to true
+
+    if check_true(data):
+        return "T"
+
+    result2 = ""
+    counter = 0
+    for x in data:
+        counter += 1
+        tmp_counter = 0
         result = ""
         for i in range(len(x)):
             if x[i] == '-':
                 continue
             if x[i] == '0':
                 result += '~'
-            result += "abcdefghijklmnoprstuwyz"[i] + '&'
-        result2 += '(' + result[:-1] + ')|'
-    return result2[:-1]
+            result += alphabet[i] + '&'
+            tmp_counter += 1
+        if tmp_counter > 1:
+            result2 += '(' + result[:-1] + ')|'
+        else:
+            result2 += result[:-1] + "|"
+    if counter == 1 and tmp_counter > 1:
+        return result2[1:-2]
+    else:
+        return result2[:-1]
 
 
 def main():
-    f = open("dane.txt", "r")
-    data = set(f.read().splitlines())
-    for line in data:
-        line = line.replace("~~", "")
-        if not check(line):
-            print("ERROR")
-            continue
-        onp_line = onp(line)
-        var_line = var(onp_line)
-        data = set()
-        for i in gen(len(var_line)):
-            if evaluate(onp_line, i):
-                data.add(i)
-        data = reduce(data)
-        print(line + ": " + expr(data))
+    while 1:
+        try:
+            line = sys.stdin.readline()
+
+            # erase unwanted spaces and double negations
+
+            line = line.replace(" ", "")
+            line = line.replace("~~", "")
+
+            # if the expression is not correct return ERROR
+
+            if not check(line):
+                print("ERROR")
+                continue
+            rpn_line = rpn(line)
+            var_line = get_var(rpn_line)
+            data = set()
+            for i in gen(len(var_line)):
+                if evaluate(rpn_line, i):
+                    data.add(i)
+            data = reduce(data)
+            print(line + ": " + ex_from_reduced(data))
+
+        except KeyboardInterrupt:
+            break
+
+        if not line:
+            break
 
 
 main()
