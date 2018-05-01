@@ -125,7 +125,7 @@ def evaluate(ex, val):
         elif z in "&":
             st.append(AND(st.pop(), st.pop()))
         elif z in ">":
-            st.append(IMPL(st.pop(), (1 - st.pop())))
+            st.append(IMPL(st.pop(), st.pop()))
         elif z in "/":
             st.append(NAND(st.pop(), st.pop()))
         elif z in "^":
@@ -219,34 +219,22 @@ def ex_from_reduced(data):
 
 
 def main():
-    while 1:
-        try:
-            line = sys.stdin.readline()
-
-            # erase unwanted spaces and double negations
-
-            line = line.replace(" ", "")
-            line = line.replace("~~", "")
-
-            # if the expression is not correct return ERROR
-
-            if not check(line):
-                print("ERROR")
-                continue
-            rpn_line = rpn(line)
-            var_line = get_var(rpn_line)
-            data = set()
-            for i in gen(len(var_line)):
-                if evaluate(rpn_line, i):
-                    data.add(i)
-            data = reduce(data)
-            print(line + ": " + ex_from_reduced(data))
-
-        except KeyboardInterrupt:
-            break
-
-        if not line:
-            break
+    f = open("dane.txt", "r")
+    data = set(f.read().splitlines())
+    for line in data:
+        print(line + ": ", end="")
+        line = line.replace("~~", "")
+        if not check(line):
+            print("ERROR")
+            continue
+        onp_line = rpn(line)
+        var_line = get_var(onp_line)
+        data = set()
+        for i in gen(len(var_line)):
+            if evaluate(onp_line, i):
+                data.add(i)
+        data = reduce(data)
+        print(ex_from_reduced(data))
 
 
 main()
