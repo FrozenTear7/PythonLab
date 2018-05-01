@@ -1,4 +1,5 @@
 import sys
+import re
 
 OP = "&|>/^~"
 alphabet = "abcdefghijklmnoprstuwyz"
@@ -176,24 +177,17 @@ def reduce(data):
     return result
 
 
-def check_true(data):
-    for x in data:
-        if x != '-':
-            return True
-    return False
-
-
 # returns an expression from the reduced form
 # also erases unnecessary parentheses
 
-def ex_from_reduced(data):
+def ex_from_reduced(data, n):
     if len(data) == 0:
         return "F"
 
     # fully reduced to true
 
-    # if check_true(data):
-    #     return "T"
+    if "".rjust(n, "-") in data:
+        return "T"
 
     result2 = ""
     counter = 0
@@ -219,22 +213,36 @@ def ex_from_reduced(data):
 
 
 def main():
-    f = open("dane.txt", "r")
-    data = set(f.read().splitlines())
-    for line in data:
-        print(line + ": ", end="")
-        line = line.replace("~~", "")
-        if not check(line):
-            print("ERROR")
-            continue
-        onp_line = rpn(line)
-        var_line = get_var(onp_line)
-        data = set()
-        for i in gen(len(var_line)):
-            if evaluate(onp_line, i):
-                data.add(i)
-        data = reduce(data)
-        print(ex_from_reduced(data))
+    while 1:
+        try:
+            line = sys.stdin.readline()
+
+            # erase unwanted spaces and double negations
+
+            line = line.replace(" ", "")
+            line = line.replace("~~", "")
+            line = line[:-1]
+
+            # if the expression is not correct return ERROR
+
+            if not check(line):
+                print("ERROR")
+                continue
+
+            rpn_line = rpn(line)
+            var_line = get_var(rpn_line)
+            data = set()
+            for i in gen(len(var_line)):
+                if evaluate(rpn_line, i):
+                    data.add(i)
+            data = reduce(data)
+            print(ex_from_reduced(data, len(var_line)))
+
+        except KeyboardInterrupt:
+            break
+
+        if not line:
+            break
 
 
 main()
