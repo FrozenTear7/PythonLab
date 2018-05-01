@@ -18,6 +18,10 @@ def NAND(a, b):
     return 1 - (a and b)
 
 
+def IMPL(a, b):
+    return a or (1 - b)
+
+
 def XOR(a, b):
     return OR(AND(a, (1 - b)), AND((1 - a), b))
 
@@ -121,7 +125,7 @@ def evaluate(ex, val):
         elif z in "&":
             st.append(AND(st.pop(), st.pop()))
         elif z in ">":
-            st.append(st.pop() or (1 - st.pop()))
+            st.append(IMPL(st.pop(), (1 - st.pop())))
         elif z in "/":
             st.append(NAND(st.pop(), st.pop()))
         elif z in "^":
@@ -188,8 +192,8 @@ def ex_from_reduced(data):
 
     # fully reduced to true
 
-    if check_true(data):
-        return "T"
+    # if check_true(data):
+    #     return "T"
 
     result2 = ""
     counter = 0
