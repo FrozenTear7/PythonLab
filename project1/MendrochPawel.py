@@ -1,5 +1,4 @@
 import sys
-import re
 
 OP = "&|>/^~"
 alphabet = "abcdefghijklmnoprstuwyz"
@@ -40,24 +39,32 @@ def check(ex):
     for z in ex:
         if z == '~':
             continue
+        # endif
         if state:
             if z.isalnum():
                 state = False
             elif z in ')' + OP:
                 return False
+            # endif
         else:
             if z in OP:
                 state = True
             elif z in '(' or z.isalnum():
                 return False
+            # endif
+        # endif
         if z == '(':
             paren_count += 1
         elif z == ')':
             paren_count -= 1
+        # endif
         if paren_count < 0:
             state = False
+        # endif
+    # endfor
     if paren_count != 0:
         return False
+    # endif
     return not state
 
 
@@ -72,6 +79,8 @@ def bal(ex, op):
             paren_count -= 1
         elif ex[i] in op and paren_count == 0:
             return i
+        # endif
+    # endfor
     return -1
 
 
@@ -82,18 +91,23 @@ def rpn(ex):
         return ex
     while ex[0] == '(' and ex[-1] == ')' and check(ex[1: -1]):
         ex = ex[1: -1]
+    # endwhile
     p = bal(ex, ">")
     if p >= 0:
         return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    # endif
     p = bal(ex, "&|/")
     if p >= 0:
         return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    # endif
     p = bal(ex, "^")
     if p >= 0:
         return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    # endif
     p = bal(ex, "~")
     if p >= 0:
         return rpn(ex[:p]) + rpn(ex[p + 1:]) + ex[p]
+    # endif
     return ex
 
 
@@ -108,6 +122,9 @@ def map(ex, var, val):
             p = var.find(l[i])
             if p >= 0:
                 l[i] = val[p]
+            # endif
+        # endif
+    # endfor
 
     return "".join(l)
 
@@ -131,6 +148,9 @@ def evaluate(ex, val):
             st.append(NAND(st.pop(), st.pop()))
         elif z in "^":
             st.append(XOR(st.pop(), st.pop()))
+        # endif
+    # endfor
+
     return st.pop()
 
 
@@ -139,6 +159,7 @@ def evaluate(ex, val):
 def gen(n):
     for i in range(2 ** n):
         yield bin(i)[2:].rjust(n, "0")
+    # endfor
 
 
 def latch(s1, s2):
@@ -150,11 +171,14 @@ def latch(s1, s2):
         else:
             result += '-'
             counter += 1
+        # endif
+    # endfor
 
     if counter == 1:
         return result
     else:
         return False
+    # endif
 
 
 # Quine McCluskey algorithm for logic reduction
@@ -170,10 +194,14 @@ def reduce(data):
                 result.add(tmp)
                 f1 = True
                 f2 = True
+            # endif
+        # endfor
         if not f1:
             result.add(x)
+        # endif
     if f2:
         return reduce(result)
+    # endif
     return result
 
 
@@ -183,11 +211,13 @@ def reduce(data):
 def ex_from_reduced(data, n):
     if len(data) == 0:
         return "F"
+    # endif
 
     # fully reduced to true
 
     if "".rjust(n, "-") in data:
         return "T"
+    # endif
 
     result2 = ""
     counter = 0
@@ -198,18 +228,23 @@ def ex_from_reduced(data, n):
         for i in range(len(x)):
             if x[i] == '-':
                 continue
+            # endif
             if x[i] == '0':
                 result += '~'
+            # endif
             result += alphabet[i] + '&'
             tmp_counter += 1
         if tmp_counter > 1:
             result2 += '(' + result[:-1] + ')|'
         else:
             result2 += result[:-1] + "|"
+        # endif
+    # endfor
     if counter == 1 and tmp_counter > 1:
         return result2[1:-2]
     else:
         return result2[:-1]
+    # endif
 
 
 def main():
@@ -228,6 +263,7 @@ def main():
             if not check(line):
                 print("ERROR")
                 continue
+            # endif
 
             rpn_line = rpn(line)
             var_line = get_var(rpn_line)
@@ -235,6 +271,8 @@ def main():
             for i in gen(len(var_line)):
                 if evaluate(rpn_line, i):
                     data.add(i)
+                # endif
+            # endfor
             data = reduce(data)
             print(ex_from_reduced(data, len(var_line)))
 
@@ -243,6 +281,8 @@ def main():
 
         if not line:
             break
+        # endif
+    # endwhile
 
 
 main()
