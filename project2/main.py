@@ -1,10 +1,14 @@
+# Author: Paweł Mendroch
+
 import yaml
 from socket import *
 from tkinter import *
 from tkinter.ttk import *
 
+# set IP and PORT
 UDP_IP = '255.255.255.255'
 UDP_PORT = 2018
+
 
 # return yaml from the file
 def getYamlData():
@@ -14,17 +18,21 @@ def getYamlData():
 
 data = getYamlData()
 
+# open tkinter window
 window = Tk()
 window.title('Virtual remote')
 
 tab_control = Notebook(window)
 
+# iterate through rooms from yaml data
 for room in data:
+    # for each room iterate through room's items and create a tab
     for roomName in room:
         tab = Frame(tab_control)
         tab_control.add(tab, text=roomName)
 
         j = 0
+        # for each item create an entry of item's description and buttons ON / OFF to send UDP
         for item in room[roomName]:
             lbl1 = Label(tab, text=room[roomName][item])
             lbl1.grid(column=0, row=j)
