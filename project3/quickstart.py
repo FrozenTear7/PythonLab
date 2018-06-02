@@ -10,28 +10,39 @@ toCorrect = []
 
 def filter_records(arr):
     new_arr = []
-    for x in arr:
-        if x['studia'] != '---':
-            new_arr.append(x)
+    for i in range(0, len(arr)):
+        if arr[i]['studia'] != '---':
+            new_obj = {}
+            new_obj['row'] = i + 1
+            new_obj['record'] = arr[i]
+
+            new_arr.append(new_obj)
     return new_arr
+
+
+def push_to_to_correct(x, error_type):
+    new_obj = x
+    new_obj['error'] = error_type
+    toCorrect.append(new_obj)
 
 
 def correct_arr(arr):
     for x in arr:
-        if not re.match('^s\d+$', x['studia']):
-            toCorrect.append(x)
-        elif not re.match('^\d+$', str(x['sem'])):
-            toCorrect.append(x)
-        elif x['pora'] not in 'LZ':
-            toCorrect.append(x)
-        elif x['typ'] not in 'WCPL':
-            toCorrect.append(x)
-        elif x['grupa'] and not re.match('^\d+$', str(x['grupa'])):
-            toCorrect.append(x)
-        elif not re.match('^\d+$', str(x['wym'])):
-            toCorrect.append(x)
-        elif x['miejsce'] and not re.match('^\w\d+ \S+$', x['miejsce']):
-            toCorrect.append(x)
+        record = x['record']
+        if not re.match('^s\d+$', record['studia']):
+            push_to_to_correct(x, 'studia')
+        elif not re.match('^\d+$', str(record['sem'])):
+            push_to_to_correct(x, 'sem')
+        elif record['pora'] not in 'LZ':
+            push_to_to_correct(x, 'pora')
+        elif record['typ'] not in 'WCPL':
+            push_to_to_correct(x, 'typ')
+        elif record['grupa'] and not re.match('^\d+$', str(record['grupa'])):
+            push_to_to_correct(x, 'grupa')
+        elif not re.match('^\d+$', str(record['wym'])):
+            push_to_to_correct(x, 'wym')
+        elif record['miejsce'] and not re.match('^\w\d+ \S+$', record['miejsce']):
+            push_to_to_correct(x, 'miejsce')
 
 
 # connect to the spreadsheet
