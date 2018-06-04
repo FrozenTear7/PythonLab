@@ -1,12 +1,33 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
+import unittest
 
 # toCorrect is a hash consisting of records, which data is to be corrected
 # its values are the wrong records and keys - row:column
 
 toCorrect = []
 lecturers = {}
+
+
+def load_from_spreadsheet(key_file, spreadsheet_name):
+    # connect to the spreadsheet
+
+    scope = ['http://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(key_file, scope)
+
+    gc = gspread.authorize(credentials)
+
+    return gc.open(spreadsheet_name).sheet1.get_all_records()
+
+
+def print_lecturers_classes(data):
+    for key in data:
+        print(key)
+        for lecture in lecturers[key]:
+            print(lecture)
+        print("\n")
 
 
 def filter_records(arr):
@@ -44,7 +65,9 @@ def correct_arr(arr):
         if record['osoba']:
             lecturers[record['osoba']].append(record)
 
-        if not re.match('^s\d+$', record['studia']):
+        if not record['typ'] or not record['przedmiot']:
+            push_to_to_correct(x, 'blank')
+        elif not re.match('^s\d+$', record['studia']):
             push_to_to_correct(x, 'studia')
         elif not re.match('^\d+$', str(record['sem'])):
             push_to_to_correct(x, 'sem')
@@ -68,30 +91,26 @@ def correct_arr(arr):
             push_to_to_correct(x, 'wym')
 
 
-# connect to the spreadsheet
-
-scope = ['http://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-
-credentials = ServiceAccountCredentials.from_json_keyfile_name('MendrochPythonProject3-00c41c0a29cb.json', scope)
-
-gc = gspread.authorize(credentials)
-
 # open the spreadsheet
 
-wks = gc.open('MendrochPythonProject3').sheet1.get_all_records()
+wks = load_from_spreadsheet('MendrochPythonProject3-00c41c0a29cb.json', 'MendrochPythonProject3')
 
 # process the spreadsheet
 
 wks = filter_records(wks)
-
-# for i in wks:
-#     print(i)
 
 correct_arr(wks)
 
 for i in toCorrect:
     print(i)
 
-# for key in lecturers:
-#     print(key)
-#     print(lecturers[key])
+
+# print_lecturers_classes(lecturers)
+
+def fun(x):
+    return x + 1
+
+
+class MyTest(unittest.TestCase):
+    def test(self):
+        self.assertEqual(fun(3), 4)
