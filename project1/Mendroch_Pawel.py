@@ -1,7 +1,7 @@
 import sys
 
 OP = "&|>/^~"
-alphabet = "abcdefghijklmnoprstuwyz"
+alphabet = "abcdefghijklmnopqrstuwyz"
 
 
 # defined operations
@@ -26,9 +26,14 @@ def XOR(a, b):
     return OR(AND(a, (1 - b)), AND((1 - a), b))
 
 
+# get all variables
+
 def get_var(ex):
-    w = [z for z in ex if z.isalnum()]
-    return "".join(sorted(set(w)))
+    result = ""
+    for var in ex:
+        if var in alphabet:
+            result += var
+    return "".join(sorted(set(result)))
 
 
 # expression check
@@ -248,41 +253,35 @@ def ex_from_reduced(data, n):
 
 
 def main():
-    while 1:
-        try:
-            line = sys.stdin.readline()
+    line = sys.stdin.readline()
+    copy_line = line
 
-            # erase unwanted spaces and double negations
+    line = line.replace(" ", "")
+    line = line.replace("~~", "")
+    line = line[:-1]
 
-            line = line.replace(" ", "")
-            line = line.replace("~~", "")
-            line = line[:-1]
+    # if the expression is not correct return ERROR
 
-            # if the expression is not correct return ERROR
+    if not check(line):
+        print("ERROR")
+        return
 
-            if not check(line):
-                print("ERROR")
-                continue
-            # endif
+    rpn_line = rpn(line)
+    var_line = get_var(rpn_line)
+    data = set()
 
-            rpn_line = rpn(line)
-            var_line = get_var(rpn_line)
-            data = set()
-            for i in gen(len(var_line)):
-                if evaluate(rpn_line, i):
-                    data.add(i)
-                # endif
-            # endfor
-            data = reduce(data)
-            print(ex_from_reduced(data, len(var_line)))
-
-        except KeyboardInterrupt:
-            break
-
-        if not line:
-            break
+    for i in gen(len(var_line)):
+        if evaluate(rpn_line, i):
+            data.add(i)
         # endif
-    # endwhile
+    # endfor
+
+    data = reduce(data)
+    reduced = ex_from_reduced(data, len(var_line))
+    if len(copy_line) < len(reduced):
+        print(copy_line)
+    else:
+        print(reduced)
 
 
 main()
