@@ -1,13 +1,14 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
-import unittest
+import sys
 
-# toCorrect is a hash consisting of records, which data is to be corrected
+# to_correct is a hash consisting of records, which data is to be corrected
 # its values are the wrong records and keys - row:column
 
-toCorrect = []
+to_correct = []
 lecturers = {}
+overlapping = []
 
 
 def load_from_spreadsheet(key_file, spreadsheet_name):
@@ -23,11 +24,20 @@ def load_from_spreadsheet(key_file, spreadsheet_name):
 
 
 def print_lecturers_classes(data):
+    print('Lecturers classes:')
     for key in data:
         print(key)
-        for lecture in lecturers[key]:
+        for lecture in data[key]:
             print(lecture)
-        print("\n")
+        print('\n')
+
+
+def print_overlapping_classes(data):
+    print('Overlapping classes:')
+    for record in data:
+        print(record['record'])
+        print(record['record2'])
+        print('\n')
 
 
 def filter_records(arr):
@@ -48,7 +58,7 @@ def filter_records(arr):
 def push_to_to_correct(x, error_type):
     new_obj = x
     new_obj['error'] = error_type
-    toCorrect.append(new_obj)
+    to_correct.append(new_obj)
 
 
 def check_day(day):
@@ -91,26 +101,62 @@ def correct_arr(arr):
             push_to_to_correct(x, 'wym')
 
 
-# open the spreadsheet
+def check_overlapping(arr):
+    for x in arr:
+        record = x['record']
 
-wks = load_from_spreadsheet('MendrochPythonProject3-00c41c0a29cb.json', 'MendrochPythonProject3')
+        for y in arr:
+            record2 = y['record']
 
-# process the spreadsheet
-
-wks = filter_records(wks)
-
-correct_arr(wks)
-
-for i in toCorrect:
-    print(i)
-
-
-# print_lecturers_classes(lecturers)
-
-def fun(x):
-    return x + 1
+            if record != record2 and record['studia'] == record2['studia'] and record['sem'] == record2['sem'] \
+                    and record['pora'] == record2['pora'] and record['miejsce'] == record2['miejsce'] \
+                    and record['godz'] == record2['godz'] and record['tyg'] == record2['tyg'] \
+                    and record['dzien'] == record2['dzien']:
+                new_obj = {}
+                new_obj['record'] = record
+                new_obj['record2'] = record2
+                overlapping.append(new_obj)
 
 
-class MyTest(unittest.TestCase):
-    def test(self):
-        self.assertEqual(fun(3), 4)
+def main():
+    if len(sys.argv) == 2:
+        # open the spreadsheet
+
+        wks = load_from_spreadsheet(sys.argv[1], 'MendrochPythonProject3')
+
+        # process the spreadsheet
+
+        wks = filter_records(wks)
+
+        correct_arr(wks)
+
+        check_overlapping(wks)
+
+        while 1:
+            print('____________________________________________________________________')
+            print('c - lines to correct, l - lecturers classes, r - overlapping classes')
+            print('\n')
+
+            try:
+                line = sys.stdin.readline()
+
+                if line[:-1] == 'c':
+                    print('Lines to correct:')
+                    for i in to_correct:
+                        print(i)
+                elif line[:-1] == 'l':
+                    print_lecturers_classes(lecturers)
+                elif line[:-1] == 'r':
+                    print_overlapping_classes(overlapping)
+
+            except KeyboardInterrupt:
+                break
+
+            if not line:
+                break
+
+    else:
+        print('Please provide the filename with json key at argv[1]')
+
+
+main()
